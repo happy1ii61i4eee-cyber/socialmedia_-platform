@@ -1,0 +1,34 @@
+stages:
+  - install
+  - test
+
+variables:
+  GIT_STRATEGY: clone
+  POSTGRES_DB: social_test
+  POSTGRES_USER: happy29
+  POSTGRES_PASSWORD: "19960110"
+  DB_HOST: postgres-db
+  DB_PORT: 5432
+  NODE_ENV: test
+  TEST_MODE: "true"
+
+services:
+  - name: postgres:16.4
+    alias: postgres-db
+
+install:
+  stage: install
+  image: node:20
+  script:
+    - echo "Current directory and files:"
+    - pwd
+    - ls -al
+    - npm install
+
+test:
+  stage: test
+  image: node:20
+  script:
+    - echo "Waiting for PostgreSQL to be ready..."
+    - sleep 5
+    - npm run testapi

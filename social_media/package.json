@@ -1,0 +1,25 @@
+{
+  "name": "sosial-media",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "dotenv_config_quiet=true node -r dotenv/config ./bin/www",
+    "testapi": "env TEST_MODE=true mocha ./tests/api/users.test.js --exit"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "ejs": "~2.6.1",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "~1.9.1",
+    "pg": "^8.16.3",
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "mocha": "^11.7.1",
+    "supertest": "^7.1.4"
+  }
+}

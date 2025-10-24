@@ -1,0 +1,7 @@
+node_modules
+pgadmin-data/
+db-data/
+sessions/
+configs/*.json
+.env
+docker-compose.yaml

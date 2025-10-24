@@ -1,0 +1,30 @@
+services:
+  postgres-db:
+    image: postgres:16.4
+    container_name: postgres-db
+    restart: always
+    volumes:
+      - ${PWD}/db-data:/var/lib/postgresql/data
+      - ${PWD}/init-db:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_DB: member
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: pg123456
+      TZ: Asia/Taipei
+      PGTZ: Asia/Taipei
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:8.8
+    restart: always
+    tty: true
+    stdin_open: true
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@demo.com
+      PGADMIN_DEFAULT_PASSWORD: pgadmin123456
+    volumes:
+      - ${PWD}/pgadmin-data:/var/lib/pgadmin
+    ports:
+      - "8888:80"
