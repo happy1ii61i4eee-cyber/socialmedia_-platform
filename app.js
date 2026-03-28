@@ -9,17 +9,21 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 
-/// 修正：優先從環境變數讀取，若無則回退到 JSON (或直接使用環境變數)
+/// 修正：加入 SSL 設定並對齊 Render 預設變數名稱
 const pgConfig = {
   host: process.env.POSTGRES_HOST || 'localhost',
   port: process.env.POSTGRES_PORT || 5432,
-  database: process.env.POSTGRES_DB || 'member',
+  database: process.env.POSTGRES_DATABASE || 'member', // Render 預設通常是 POSTGRES_DATABASE
   username: process.env.POSTGRES_USER || 'admin',
   password: process.env.POSTGRES_PASSWORD || 'pg123456',
+  // 關鍵修正：當在生產環境 (Render) 時，強制開啟 SSL
+  ssl: process.env.NODE_ENV === 'production' ? 'require' : false, 
 };
 
-// 為了除錯，你可以暫時加入這行 (正式上線前記得刪除)
-console.log('正在嘗試連線的用戶:', pgConfig.username);
+// 如果上面的判斷讓你困惑，直接改成這樣也可以（Render 強制要求）：
+// ssl: 'require' 
+
+console.log('正在嘗試連線的 Host:', pgConfig.host);
 
 const postgres = require('postgres');
 const sql = postgres(pgConfig);
