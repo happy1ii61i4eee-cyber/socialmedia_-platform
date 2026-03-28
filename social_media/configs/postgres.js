@@ -1,16 +1,21 @@
 const { Pool } = require('pg');
-require('dotenv').config({ quiet: true });
+
+// 優先使用環境變數 DATABASE_URL (Render 提供)
+// 如果沒有環境變數，則使用本地設定 (僅供本地測試)
+const connectionString = process.env.DATABASE_URL || 'postgres://user:password@localhost:5432/member';
 
 const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  host: process.env.POSTGRES_HOST || 'db',
-  database: process.env.POSTGRES_DB,
-  password: process.env.POSTGRES_PASSWORD,
-  port: process.env.POSTGRES_PORT || 5432,
+  connectionString: connectionString,
+  // 關鍵設定：Render 的 PostgreSQL 強制要求 SSL 連線
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-pool.connect()
-  .then(() => console.log('✅ Connected to PostgreSQL (Docker Compose)'))
-  .catch(err => console.error('❌ PostgreSQL connection error:', err));
+// 測試連線是否成功
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error('❌ Error acquiring client', err.stack);
+  }
+  console.log('✅ Connected to PostgreSQL');
+});
 
 module.exports = pool;
