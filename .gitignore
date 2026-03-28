@@ -1,0 +1,9 @@
+# 排除所有 Docker 產生的資料
+pgadmin-data/
+social_media/db-data/
+social_media/init-db/
+node_modules/
+.env
+
+# 排除系統暫存
+.DS_Store
