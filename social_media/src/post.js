@@ -1,7 +1,12 @@
 // src/post.js
-const pool = require('../configs/postgres'); // ✅ 改用共用連線池
+
+// ❌ 移除這行，不要在這裡建立獨立連線
+// const pool = require('../configs/postgres'); 
 
 async function userPost(req, res) {
+  // ✅ 從 app.locals 取得正確的 admin 連線實例
+  const sql = req.app.locals.sql; 
+  
   const { username } = req.user;  
   const { content } = req.body;
 
@@ -10,22 +15,26 @@ async function userPost(req, res) {
   }
 
   try {
-    // 檢查該會員是否存在
-    const result = await pool.query('SELECT * FROM member WHERE username = $1', [username]);
+    // 🔍 檢查該會員是否存在 (改用 postgres.js 語法)
+    const members = await sql`
+      SELECT username FROM member WHERE username = ${username}
+    `;
 
-    if (result.rows.length === 0) {
+    if (members.length === 0) {
       return res.status(404).json({ error: '找不到帳號' });
     }
 
-    // 插入貼文
-    const insertPost = await pool.query(
-      'INSERT INTO post (username, content) VALUES ($1, $2) RETURNING username,id, content, created_at',
-      [username, content]
-    );
+    // ✍️ 插入貼文 (改用 postgres.js 語法)
+    // 使用解構賦值 [newPost] 直接取得回傳的單筆結果
+    const [newPost] = await sql`
+      INSERT INTO post (username, content) 
+      VALUES (${username}, ${content}) 
+      RETURNING username, id, content, created_at
+    `;
 
     res.status(200).json({
       message: '貼文成功',
-      post: insertPost.rows[0],
+      post: newPost,
     });
 
   } catch (err) {
@@ -34,4 +43,5 @@ async function userPost(req, res) {
   }
 }
 
+// ✅ 確保匯出格式正確
 module.exports = { userPost };

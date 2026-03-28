@@ -1,9 +1,13 @@
 // src/getId.js
-const pool = require('../configs/postgres'); // ✅ 改用共用的 Pool
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+// ❌ 移除這行：不要在這裡 require 連線設定，這會導致帳號變回 "user"
+// const pool = require('../configs/postgres'); 
+
 async function getID(req, res) {
+  // ✅ 從 app.locals 取得在 app.js 已經連線成功的 admin 實例
+  const sql = req.app.locals.sql; 
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -11,14 +15,18 @@ async function getID(req, res) {
   }
 
   try {
-    // 🔍 使用 Pool 查詢
-    const result = await pool.query('SELECT * FROM member WHERE username = $1', [username]);
+    // 🔍 改用 postgres.js 的標籤模板語法 (Tagged Template)
+    // 注意：這裡不再需要 .query() 或 .rows，它會直接回傳陣列
+    const users = await sql`
+      SELECT * FROM member 
+      WHERE username = ${username}
+    `;
 
-    if (result.rows.length === 0) {
+    if (users.length === 0) {
       return res.status(401).json({ error: '帳號不存在' });
     }
 
-    const user = result.rows[0];
+    const user = users[0];
 
     // 🧂 驗證密碼
     const isMatch = await bcrypt.compare(password, user.password);

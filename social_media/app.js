@@ -9,10 +9,17 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 
-// 根據環境變數載入不同資料庫設定
-const pgConfig = process.env.NODE_ENV === 'test' 
-  ? require('./configs/postgres-test.json') 
-  : require('./configs/postgres.json');
+/// 修正：優先從環境變數讀取，若無則回退到 JSON (或直接使用環境變數)
+const pgConfig = {
+  host: process.env.POSTGRES_HOST || 'localhost',
+  port: process.env.POSTGRES_PORT || 5432,
+  database: process.env.POSTGRES_DB || 'member',
+  username: process.env.POSTGRES_USER || 'admin',
+  password: process.env.POSTGRES_PASSWORD || 'pg123456',
+};
+
+// 為了除錯，你可以暫時加入這行 (正式上線前記得刪除)
+console.log('正在嘗試連線的用戶:', pgConfig.username);
 
 const postgres = require('postgres');
 const sql = postgres(pgConfig);

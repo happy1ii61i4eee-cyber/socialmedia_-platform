@@ -1,7 +1,7 @@
 // src/searchPost.js
-const pool = require('../configs/postgres'); // ✅ 改用共用連線池
 
 async function searchPost(req, res) {
+  const sql = req.app.locals.sql;
   const { username } = req.query;
 
   if (!username) {
@@ -9,31 +9,31 @@ async function searchPost(req, res) {
   }
 
   try {
-    // 查詢貼文
-    const postResult = await pool.query(
-      'SELECT id, username, content, created_at FROM post WHERE username = $1 ORDER BY created_at DESC',
-      [username]
-    );
-
-    const posts = postResult.rows;
+    // 🔍 1. 查詢貼文
+    const posts = await sql`
+      SELECT id, username, content, created_at 
+      FROM post 
+      WHERE username = ${username} 
+      ORDER BY created_at DESC
+    `;
 
     if (posts.length === 0) {
       return res.status(404).json({ error: '該帳號尚無貼文' });
     }
 
-    // 查詢留言
+    // 🔍 2. 查詢留言
     const postIds = posts.map(p => p.id);
     let comments = [];
 
     if (postIds.length > 0) {
-      const commentQuery = `
+      // ✅ 修正點：使用 sql(postIds) 並移除括號 ()
+      // 這樣 postgres.js 才會把 [81, 80...] 轉換成 SQL 數值清單 (81, 80...)
+      comments = await sql`
         SELECT content, post_id, username, created_at
         FROM comment
-        WHERE post_id = ANY($1)
+        WHERE post_id IN ${sql(postIds)}
         ORDER BY created_at ASC
       `;
-      const commentResult = await pool.query(commentQuery, [postIds]);
-      comments = commentResult.rows;
     }
 
     res.status(200).json({

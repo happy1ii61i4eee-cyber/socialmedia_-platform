@@ -2,45 +2,44 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('./auth.js');
-const pool = require('../configs/postgres'); // ✅ 改用共用連線池
 
 router.get('/', authMiddleware, async (req, res) => {
+  const sql = req.app.locals.sql;
+
   try {
-    // 從 token 拿出登入使用者 ID
     const userId = req.user.id;
 
-    // 查詢會員資料
-    const memberResult = await pool.query(
-      'SELECT id, username, email, city FROM member WHERE id = $1',
-      [userId]
-    );
+    // 🔍 1. 查詢會員資料
+    const members = await sql`
+      SELECT id, username, email, city FROM member WHERE id = ${userId}
+    `;
 
-    if (memberResult.rows.length === 0) {
+    if (members.length === 0) {
       return res.status(404).json({ error: '找不到會員資料' });
     }
 
-    const user = memberResult.rows[0];
+    const user = members[0];
 
-    // 查詢該會員的貼文
-    const postsResult = await pool.query(
-      'SELECT id, content, created_at FROM post WHERE username = $1 ORDER BY created_at DESC',
-      [user.username]
-    );
+    // 🔍 2. 查詢該會員的貼文
+    const posts = await sql`
+      SELECT id, content, created_at FROM post 
+      WHERE username = ${user.username} 
+      ORDER BY created_at DESC
+    `;
 
-    const posts = postsResult.rows;
-
-    // 查詢留言（如果有貼文的話）
+    // 🔍 3. 查詢留言
     let comments = [];
     if (posts.length > 0) {
       const postIds = posts.map(p => p.id);
-      const commentQuery = `
+      
+      // ✅ 修正重點：使用 sql(postIds) 語法，並且不要加括號 ()
+      // postgres.js 會自動幫你把陣列轉成 (1, 2, 3) 這種格式
+      comments = await sql`
         SELECT id, post_id, username, content, created_at
         FROM comment
-        WHERE post_id = ANY($1)
+        WHERE post_id IN ${sql(postIds)}
         ORDER BY created_at ASC
       `;
-      const commentsResult = await pool.query(commentQuery, [postIds]);
-      comments = commentsResult.rows;
     }
 
     res.json({
